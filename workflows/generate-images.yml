@@ -6,8 +6,11 @@ on:
       - "images/**"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
-  build:
+  generate:
     runs-on: ubuntu-latest
 
     steps:
@@ -16,8 +19,12 @@ jobs:
 
       - name: Generate images.json
         run: |
-          mkdir -p images
-          ls images | grep -Ei '\\.(png|jpg|jpeg|webp|gif)$' | sort | jq -R -s -c 'split("\n")[:-1]' > images/images.json
+          echo "Generating images/images.json"
+          ls -la images || true
+          find images -maxdepth 1 -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' -o -iname '*.gif' \) \
+            | sed 's|images/||' \
+            | sort \
+            | jq -R -s -c 'split("\n")[:-1]' > images/images.json
 
       - name: Commit images.json
         uses: stefanzweifel/git-auto-commit-action@v5
