@@ -1,0 +1,26 @@
+name: Generate images.json
+
+on:
+  push:
+    paths:
+      - "images/**"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate images.json
+        run: |
+          mkdir -p images
+          ls images | grep -Ei '\\.(png|jpg|jpeg|webp|gif)$' | sort | jq -R -s -c 'split("\n")[:-1]' > images/images.json
+
+      - name: Commit images.json
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Auto-generate images.json"
+          file_pattern: images/images.json
