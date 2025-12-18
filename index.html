@@ -95,6 +95,7 @@
       height: 100%;
       display: block;
       object-fit: cover;
+      cursor: zoom-in;
     }
 
     .card .info {
@@ -111,10 +112,6 @@
       font-size: 0.9rem;
     }
 
-    .card img {
-  cursor: zoom-in;
-    }
-    
     section {
       margin-top: 5rem;
     }
@@ -137,48 +134,47 @@
     }
 
     /* ---------- Lightbox ---------- */
-.lightbox {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.85);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 2rem;
-}
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.9);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
 
-.lightbox.active {
-  display: flex;
-}
+    .lightbox.active {
+      display: flex;
+    }
 
-.lightbox img {
-  max-width: 100%;
-  max-height: 100%;
-  border-radius: 12px;
-  box-shadow: 0 40px 80px rgba(0,0,0,0.6);
-}
+    .lightbox img {
+      max-width: 95vw;
+      max-height: 95vh;
+      border-radius: 12px;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.6);
+    }
 
-.lightbox span {
-  position: absolute;
-  top: 1.5rem;
-  right: 2rem;
-  font-size: 2rem;
-  color: white;
-  cursor: pointer;
-  user-select: none;
-}
+    #lightboxClose {
+      position: absolute;
+      top: 1rem;
+      right: 1.5rem;
+      font-size: 2rem;
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+    }
 
-/* Blur-up lazy loading */
-img[data-src] {
-  filter: blur(12px);
-  transition: filter 0.4s ease;
-}
+    /* Blur-up lazy loading */
+    img[data-src] {
+      filter: blur(12px);
+      transition: filter 0.4s ease;
+    }
 
-img.loaded {
-  filter: blur(0);
-}
-
+    img.loaded {
+      filter: blur(0);
+    }
   </style>
 </head>
 <body>
@@ -229,72 +225,64 @@ img.loaded {
     © <span id="year"></span> Your Name · Built for GitHub Pages
   </footer>
 
-<script>
-  const gallery = document.getElementById('gallery');
-  const lightbox = document.getElementById('lightbox');
-  const lightboxImg = document.getElementById('lightboxImg');
-  const lightboxClose = document.getElementById('lightboxClose');
+  <!-- Lightbox -->
+  <div id="lightbox" class="lightbox">
+    <button id="lightboxClose" aria-label="Close">×</button>
+    <img id="lightboxImg" alt="">
+  </div>
 
-  fetch('images/images.json')
-    .then(res => res.json())
-    .then(images => {
-      images.forEach(name => {
-        const card = document.createElement('div');
-        card.className = 'card';
+  <script>
+    const gallery = document.getElementById('gallery');
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightboxImg');
+    const lightboxClose = document.getElementById('lightboxClose');
 
-        const title = name
-          .replace(/[-_]/g, ' ')
-          .replace(/\.[^/.]+$/, '');
+    fetch('images/images.json')
+      .then(res => res.json())
+      .then(images => {
+        images.forEach(name => {
+          const card = document.createElement('div');
+          card.className = 'card';
 
-        card.innerHTML = `
-          <img data-src="images/${name}" alt="${title}" loading="lazy">
-          <div class="info">
-            <h3>${title}</h3>
-            <span>Artwork</span>
-          </div>
-        `;
+          const title = name.replace(/[-_]/g, ' ').replace(/\.[^/.]+$/, '');
 
-        const img = card.querySelector('img');
+          card.innerHTML = `
+            <img data-src="images/${name}" alt="${title}" loading="lazy">
+            <div class="info">
+              <h3>${title}</h3>
+              <span>Artwork</span>
+            </div>
+          `;
 
-        img.addEventListener('click', () => {
-          lightboxImg.src = img.dataset.src || img.src;
-          lightbox.classList.add('active');
+          const img = card.querySelector('img');
+          img.addEventListener('click', () => {
+            lightboxImg.src = img.dataset.src;
+            lightbox.classList.add('active');
+          });
+
+          gallery.appendChild(card);
         });
 
-        gallery.appendChild(card);
+        const observer = new IntersectionObserver(entries => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              const img = entry.target;
+              img.src = img.dataset.src;
+              img.onload = () => img.classList.add('loaded');
+              observer.unobserve(img);
+            }
+          });
+        }, { rootMargin: '200px' });
+
+        document.querySelectorAll('img[data-src]').forEach(img => observer.observe(img));
       });
 
-      /* IntersectionObserver lazy loading */
-      const observer = new IntersectionObserver(entries => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            const img = entry.target;
-            img.src = img.dataset.src;
-            img.onload = () => img.classList.add('loaded');
-            observer.unobserve(img);
-          }
-        });
-      }, { rootMargin: '200px' });
+    lightboxClose.onclick = () => lightbox.classList.remove('active');
+    lightbox.onclick = e => { if (e.target === lightbox) lightbox.classList.remove('active'); };
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') lightbox.classList.remove('active'); });
 
-      document.querySelectorAll('img[data-src]').forEach(img =>
-        observer.observe(img)
-      );
-    });
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
 
-  lightboxClose.onclick = () => lightbox.classList.remove('active');
-  lightbox.onclick = e => {
-    if (e.target === lightbox) lightbox.classList.remove('active');
-  };
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') lightbox.classList.remove('active');
-  });
-
-  document.getElementById('year').textContent = new Date().getFullYear();
-</script>
-
-  <div class="lightbox" id="lightbox">
-  <span id="lightboxClose">×</span>
-  <img id="lightboxImg" src="" alt="">
-</div>
 </body>
 </html>
